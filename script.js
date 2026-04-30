@@ -7,6 +7,7 @@
 
 // ─── DOM Ready ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  updateExperience();
   initNavbar();
   initTypingEffect();
   initScrollReveal();
@@ -17,6 +18,37 @@ document.addEventListener('DOMContentLoaded', () => {
   initHamburger();
   initSmoothScroll();
 });
+
+// ─── UPDATE EXPERIENCE DYNAMICALLY ───────────────────────────
+function updateExperience() {
+  const startDate = new Date(2023, 8, 1); // September 2023
+  const now = new Date();
+  
+  const totalMonths = (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth());
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  
+  const expString = years + '.' + months;
+  
+  const heroExp = document.getElementById('heroExp');
+  if (heroExp) {
+    heroExp.innerHTML = expString + '<span class="stat-plus">+</span>';
+    heroExp.setAttribute('data-target', expString);
+  }
+  
+  const aboutExp = document.getElementById('aboutExp');
+  if (aboutExp) {
+    aboutExp.textContent = expString;
+  }
+
+  // Update the meta description dynamically
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) {
+    metaDesc.content = metaDesc.content.replace(/\d+\.\d+ years of experience/, expString + ' years of experience');
+  }
+}
+
+
 
 // ─── NAVBAR ──────────────────────────────────────────────────
 function initNavbar() {
@@ -381,14 +413,16 @@ document.querySelectorAll('.project-card').forEach(card => {
 });
 
 // ─── COUNTER ANIMATION FOR STATS ─────────────────────────────
-function animateCounter(element, target, duration = 1500, isFloat = false) {
+function animateCounter(element, targetNum, targetString, duration = 1500, isFloat = false) {
   let start = 0;
-  const step = target / (duration / 16);
+  const step = targetNum / (duration / 16);
   const timer = setInterval(() => {
     start += step;
-    if (start >= target) {
-      start = target;
+    if (start >= targetNum) {
+      start = targetNum;
       clearInterval(timer);
+      element.textContent = targetString;
+      return;
     }
     element.textContent = isFloat ? start.toFixed(1) : Math.floor(start);
   }, 16);
@@ -399,13 +433,18 @@ const statObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       entry.target.querySelectorAll('.stat-num').forEach(el => {
-        const text = el.textContent;
+        let rawText = el.getAttribute('data-target') || el.textContent;
+        const text = rawText.replace(/[^0-9.]/g, '');
         const num = parseFloat(text);
         const isFloat = text.includes('.');
         const plus = el.querySelector('.stat-plus');
+        
         el.textContent = isFloat ? '0.0' : '0';
         if (plus) el.appendChild(plus);
-        setTimeout(() => animateCounter(el, num, 1200, isFloat), 300);
+        setTimeout(() => {
+          const textNode = el.firstChild;
+          animateCounter(textNode || el, num, text, 1200, isFloat);
+        }, 300);
       });
       statObserver.unobserve(entry.target);
     }
